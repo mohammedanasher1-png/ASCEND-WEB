@@ -119,6 +119,21 @@ export const cacheCatalog = async (products: Product[]): Promise<void> => {
   });
 };
 
+export const addProducts = async (newProducts: Product[]): Promise<void> => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORES.PRODUCTS], 'readwrite');
+      const store = transaction.objectStore(STORES.PRODUCTS);
+      
+      newProducts.forEach(product => {
+          store.put(product);
+      });
+      
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = (e) => reject(e);
+    });
+};
+
 export const getCachedCatalog = async (): Promise<Product[]> => {
   const db = await openDB();
   return new Promise((resolve, reject) => {
@@ -129,6 +144,16 @@ export const getCachedCatalog = async (): Promise<Product[]> => {
     request.onsuccess = () => resolve(request.result || []);
     request.onerror = () => reject('Failed to fetch catalog');
   });
+};
+
+export const clearStore = async (storeName: 'products' | 'images' | 'system_cache'): Promise<void> => {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([storeName], 'readwrite');
+        tx.objectStore(storeName).clear();
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject('Failed to clear store');
+    });
 };
 
 // --- System Cache (Settings/Preferences) ---
